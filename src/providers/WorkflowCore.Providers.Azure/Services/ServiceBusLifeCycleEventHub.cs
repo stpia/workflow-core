@@ -1,9 +1,11 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using WorkflowCore.Interface;
@@ -13,9 +15,11 @@ namespace WorkflowCore.Providers.Azure.Services
 {
     public class ServiceBusLifeCycleEventHub : ILifeCycleEventHub
     {
-        private readonly ITopicClient _topicClient;
+        private readonly string _queueName;
+        private readonly ServiceBusSender _sender;
+        private ServiceBusProcessor? _processor;
         private readonly ILogger _logger;
-        private readonly ISubscriptionClient _subscriptionClient;
+        private readonly ServiceBusClient _serviceBusClient;
         private readonly ICollection<Action<LifeCycleEvent>> _subscribers = new HashSet<Action<LifeCycleEvent>>();
         private readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
@@ -26,23 +30,24 @@ namespace WorkflowCore.Providers.Azure.Services
         public ServiceBusLifeCycleEventHub(
             string connectionString,
             string topicName,
-            string subscriptionName,
+            string queueName,
             ILoggerFactory logFactory)
         {
-            _subscriptionClient = new SubscriptionClient(connectionString, topicName, subscriptionName);
-            _topicClient = new TopicClient(connectionString, topicName);
+            _serviceBusClient = new ServiceBusClient(connectionString);
+            _sender = _serviceBusClient.CreateSender(topicName);
             _logger = logFactory.CreateLogger(GetType());
+            _queueName = queueName;
         }
 
         public async Task PublishNotification(LifeCycleEvent evt)
         {
             var payload = JsonConvert.SerializeObject(evt, _serializerSettings);
-            var message = new Message(Encoding.Default.GetBytes(payload))
+            var message = new ServiceBusMessage(Encoding.Default.GetBytes(payload))
             {
-                Label = evt.Reference
+                Subject = evt.Reference
             };
 
-            await _topicClient.SendAsync(message);
+            await _sender.SendMessageAsync(message);
         }
 
         public void Subscribe(Action<LifeCycleEvent> action)
@@ -52,43 +57,50 @@ namespace WorkflowCore.Providers.Azure.Services
 
         public Task Start()
         {
-            var messageHandlerOptions = new MessageHandlerOptions(ExceptionHandler)
+            var messageHandlerOptions = new ServiceBusProcessorOptions()
             {
-                AutoComplete = false
+                AutoCompleteMessages = false
             };
 
-            _subscriptionClient.RegisterMessageHandler(MessageHandler, messageHandlerOptions);
+            _processor = _serviceBusClient.CreateProcessor(_queueName);
+            _processor.ProcessMessageAsync += MessageHandler;
+            _processor.ProcessErrorAsync += ExceptionHandler;
 
             return Task.CompletedTask;
         }
 
         public async Task Stop()
         {
-            await _topicClient.CloseAsync();
-            await _subscriptionClient.CloseAsync();
+            await _sender.CloseAsync();
+            await (_processor?.StopProcessingAsync() ?? Task.CompletedTask);
         }
 
-        private async Task MessageHandler(Message message, CancellationToken cancellationToken)
+        private async Task MessageHandler(ProcessMessageEventArgs args)
         {
             try
             {
-                var payload = Encoding.Default.GetString(message.Body);
+                var payload = Encoding.Default.GetString(args.Message.Body);
                 var evt = JsonConvert.DeserializeObject<LifeCycleEvent>(
                     payload, _serializerSettings);
 
+                if (evt == null)
+                {
+                    await args.AbandonMessageAsync(args.Message);
+                    return;
+                }
+
                 NotifySubscribers(evt);
 
-                await _subscriptionClient
-                    .CompleteAsync(message.SystemProperties.LockToken)
+                await args.CompleteMessageAsync(args.Message)
                     .ConfigureAwait(false);
             }
             catch
             {
-                await _subscriptionClient.AbandonAsync(message.SystemProperties.LockToken);
+                await args.AbandonMessageAsync(args.Message);
             }
         }
 
-        private Task ExceptionHandler(ExceptionReceivedEventArgs arg)
+        private Task ExceptionHandler(ProcessErrorEventArgs arg)
         {
             _logger.LogWarning(default, arg.Exception, "Error on receiving events");
 

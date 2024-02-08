@@ -21,7 +21,7 @@ namespace WorkflowCore.Primitives
             {
                 DateTime effectiveDate = DateTime.MinValue;
 
-                if (EffectiveDate != null)
+                if (EffectiveDate != default)
                 {
                     effectiveDate = EffectiveDate;
                 }

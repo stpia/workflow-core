@@ -85,7 +85,7 @@ namespace WorkflowCore.UnitTests.Services
 
             // Act
             await Runner.RunPreMiddleware(Workflow, Definition);
-
+            
             // Assert
             A
                 .CallTo(HandleMethodFor(middleware3))

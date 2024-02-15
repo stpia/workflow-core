@@ -3,6 +3,7 @@ using WorkflowCore.Interface;
 using WorkflowCore.Models;
 using Xunit;
 using FluentAssertions;
+using System.Threading.Tasks;
 
 namespace WorkflowCore.IntegrationTests.Scenarios
 {
@@ -57,16 +58,16 @@ namespace WorkflowCore.IntegrationTests.Scenarios
         }
 
         [Fact]
-        public void Scenario()
+        public async Task Scenario()
         {
-            var workflowId = Host.StartWorkflow("OutcomeFork").Result;
-            var instance = PersistenceProvider.GetWorkflowInstance(workflowId).Result;
+            var workflowId = await Host.StartWorkflow("OutcomeFork");
+            var instance = await PersistenceProvider.GetWorkflowInstance(workflowId);
             int counter = 0;
             while ((instance.Status == WorkflowStatus.Runnable) && (counter < 300))
             {
                 System.Threading.Thread.Sleep(100);
                 counter++;
-                instance = PersistenceProvider.GetWorkflowInstance(workflowId).Result;
+                instance = await PersistenceProvider.GetWorkflowInstance(workflowId);
             }
 
             instance.Status.Should().Be(WorkflowStatus.Complete);

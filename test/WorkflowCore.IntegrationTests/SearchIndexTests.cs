@@ -5,6 +5,7 @@ using Xunit;
 using WorkflowCore.Interface;
 using WorkflowCore.Models;
 using WorkflowCore.Models.Search;
+using System.Threading.Tasks;
 
 namespace WorkflowCore.IntegrationTests
 {
@@ -79,7 +80,7 @@ namespace WorkflowCore.IntegrationTests
 
 
         [Fact]
-        public async void should_search_on_reference()
+        public async Task should_search_on_reference()
         {
             var result1 = await Subject.Search("ref1", 0, 10);
             var result2 = await Subject.Search("ref2", 0, 10);
@@ -94,7 +95,7 @@ namespace WorkflowCore.IntegrationTests
         }
         
         [Fact]
-        public async void should_search_on_custom_data()
+        public async Task should_search_on_custom_data()
         {
             var result = await Subject.Search("dog fox", 0, 10);
 
@@ -104,7 +105,7 @@ namespace WorkflowCore.IntegrationTests
         }
 
         [Fact]
-        public async void should_filter_on_custom_data()
+        public async Task should_filter_on_custom_data()
         {
             var result = await Subject.Search(null, 0, 10, ScalarFilter.Equals<DataObject>(x => x.Value3, 7));
 
@@ -114,7 +115,7 @@ namespace WorkflowCore.IntegrationTests
         }
 
         [Fact]
-        public async void should_filter_on_alt_custom_data_with_conflicting_names()
+        public async Task should_filter_on_alt_custom_data_with_conflicting_names()
         {
             var result1 = await Subject.Search(null, 0, 10, ScalarFilter.Equals<AltDataObject>(x => x.Value1, 9));
             var result2 = await Subject.Search(null, 0, 10, DateRangeFilter.Between<AltDataObject>(x => x.Value2, new DateTime(1999, 12, 31), new DateTime(2000, 1, 2)));

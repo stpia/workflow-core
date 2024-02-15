@@ -55,7 +55,7 @@ namespace WorkflowCore.UnitTests.Services
             Func<Task> action = async () => await Runner.RunPreMiddleware(Workflow, Definition);
 
             // Assert
-            action.ShouldNotThrow();
+            action.Should().NotThrowAsync();
         }
 
         [Fact(DisplayName = "RunPreMiddleware should run middleware when one middleware")]
@@ -85,7 +85,7 @@ namespace WorkflowCore.UnitTests.Services
 
             // Act
             await Runner.RunPreMiddleware(Workflow, Definition);
-
+            
             // Assert
             A
                 .CallTo(HandleMethodFor(middleware3))
@@ -130,7 +130,7 @@ namespace WorkflowCore.UnitTests.Services
             Func<Task> action = async () => await Runner.RunPostMiddleware(Workflow, Definition);
 
             // Assert
-            action.ShouldNotThrow();
+            action.Should().NotThrowAsync();
         }
 
         [Fact(DisplayName = "RunPostMiddleware should run middleware when one middleware")]
@@ -245,7 +245,7 @@ namespace WorkflowCore.UnitTests.Services
             Func<Task> action = async () => await Runner.RunExecuteMiddleware(Workflow, Definition);
 
             // Assert
-            action.ShouldNotThrow();
+            action.Should().NotThrowAsync();
         }
 
         [Fact(DisplayName = "RunExecuteMiddleware should run middleware when one middleware")]

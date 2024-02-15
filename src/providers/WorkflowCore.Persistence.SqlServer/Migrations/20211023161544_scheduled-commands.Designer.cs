@@ -11,7 +11,7 @@ namespace WorkflowCore.Persistence.SqlServer.Migrations
 {
     [DbContext(typeof(SqlServerContext))]
     [Migration("20211023161544_scheduled-commands")]
-    partial class scheduledcommands
+    partial class Scheduledcommands
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

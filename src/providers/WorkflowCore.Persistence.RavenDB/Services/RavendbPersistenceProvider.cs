@@ -240,8 +240,8 @@ namespace WorkflowCore.Persistence.RavenDB.Services
 			}
 			catch (Exception e)
 			{
-				throw e;
-			}
+                throw;
+            }
 		}
 
 		public void EnsureStoreExists() { }

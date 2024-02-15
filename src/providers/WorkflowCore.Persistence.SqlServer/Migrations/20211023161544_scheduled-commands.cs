@@ -2,7 +2,7 @@
 
 namespace WorkflowCore.Persistence.SqlServer.Migrations
 {
-    public partial class scheduledcommands : Migration
+    public partial class Scheduledcommands : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

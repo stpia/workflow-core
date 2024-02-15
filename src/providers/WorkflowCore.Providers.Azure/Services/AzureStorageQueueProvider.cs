@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Storage.Queues;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
 using WorkflowCore.Interface;
 
 namespace WorkflowCore.Providers.Azure.Services
@@ -13,41 +12,38 @@ namespace WorkflowCore.Providers.Azure.Services
     {
         private readonly ILogger _logger;
         
-        private readonly Dictionary<QueueType, CloudQueue> _queues = new Dictionary<QueueType, CloudQueue>();
+        private readonly Dictionary<QueueType, QueueClient> _queues = new Dictionary<QueueType, QueueClient>();
 
         public bool IsDequeueBlocking => false;
 
         public AzureStorageQueueProvider(string connectionString, ILoggerFactory logFactory)
         {
             _logger = logFactory.CreateLogger<AzureStorageQueueProvider>();
-            var account = CloudStorageAccount.Parse(connectionString);
-            var client = account.CreateCloudQueueClient();
-
-            _queues[QueueType.Workflow] = client.GetQueueReference("workflowcore-workflows");
-            _queues[QueueType.Event] = client.GetQueueReference("workflowcore-events");
-            _queues[QueueType.Index] = client.GetQueueReference("workflowcore-index");
+            
+            _queues[QueueType.Workflow] = new QueueClient(connectionString, "workflowcore-workflows");
+            _queues[QueueType.Event] = new QueueClient(connectionString, "workflowcore-events");
+            _queues[QueueType.Index] = new QueueClient(connectionString, "workflowcore-index");
         }
 
         public async Task QueueWork(string id, QueueType queue)
         {
-            var msg = new CloudQueueMessage(id);
-            await _queues[queue].AddMessageAsync(msg);
+            await _queues[queue].SendMessageAsync(id);
         }
 
         public async Task<string> DequeueWork(QueueType queue, CancellationToken cancellationToken)
         {
-            CloudQueue cloudQueue = _queues[queue];
+            var cloudQueue = _queues[queue];
 
             if (cloudQueue == null)
                 return null;
             
-            var msg = await cloudQueue.GetMessageAsync();
+            var msg = await cloudQueue.ReceiveMessageAsync();
 
-            if (msg == null)
+            if (msg?.Value?.MessageId == null)
                 return null;
 
-            await cloudQueue.DeleteMessageAsync(msg);
-            return msg.AsString;
+            await cloudQueue.DeleteMessageAsync(msg.Value.MessageId, msg.Value.PopReceipt);
+            return msg.Value.Body?.ToString();
         }
 
         public async Task Start()

@@ -1,0 +1,32 @@
+name: .NET
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  Publish-Nuget-To-Github-Registry:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0
+    - name: Build
+      run: dotnet build --project src/WorkflowCore/WorkflowCore.csproj --configuration Release
+    - name: Publish
+      run: dotnet nuget push **/*.nupkg --source https://nuget.pkg.github.com/OWNER/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: true
+        DOTNET_NOLOGO: true
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+        DOTNET_MULTILEVEL_LOOKUP: 0
+        NUGET_XMLDOC_MODE: skip
+        NUGET_PACKAGES: ${{ github.workspace }}/packages
+        NUGET_HTTP_CACHE_PATH: ${{ github.workspace }}/http-cache
+        NUGET_PLUGIN_PATH: ${{ github.workspace }}/nuget-plugins
+        NUGET_PACKAGES_CACHE: ${{ github.workspace }}/packages-cache
+        NUGET_GLOBAL_PACKAGES_CACHE: ${{ github.workspace }}/global-packages-cache
+        NUGET_RESTORE_MSBUILD_VERBOSITY: minimal

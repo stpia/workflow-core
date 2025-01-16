@@ -33,8 +33,16 @@ namespace WorkflowCore.Providers.AWS.Services
             _tableName = tableName;
             _nodeId = Guid.NewGuid().ToString();
             _dateTimeProvider = dateTimeProvider;
+
+            
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Id"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<bool> AcquireLock(string Id, CancellationToken cancellationToken)
         {
             try
@@ -62,6 +70,8 @@ namespace WorkflowCore.Providers.AWS.Services
                         }
                     }
                 };
+
+                
 
                 var response = await _client.PutItemAsync(req, _cancellationTokenSource.Token);                                
 
@@ -122,6 +132,7 @@ namespace WorkflowCore.Providers.AWS.Services
 
             _cancellationTokenSource = new CancellationTokenSource();
 
+
             _heartbeatTask = new Task(SendHeartbeat);
             _heartbeatTask.Start();
         }
@@ -169,6 +180,7 @@ namespace WorkflowCore.Providers.AWS.Services
 
                                 try
                                 {
+
                                     await _client.PutItemAsync(req, _cancellationTokenSource.Token);
                                 }
                                 catch (ConditionalCheckFailedException)

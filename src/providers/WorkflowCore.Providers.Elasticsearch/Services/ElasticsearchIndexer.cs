@@ -104,7 +104,7 @@ namespace WorkflowCore.Providers.Elasticsearch.Services
                 var field = new Field(filter.Property);
                 if (filter.IsData)
                 {
-                    Expression<Func<WorkflowSearchModel, object>> dataExpr = x => x.Data[filter.DataType.FullName];
+                    Expression<Func<WorkflowSearchModel, object>> dataExpr = x => x.Data[filter.DataType.FullName];      
                     var fieldExpr = Expression.Convert(filter.Property, typeof(Func<object, object>));
                     field = new Field(Expression.Lambda(Expression.Invoke(fieldExpr, dataExpr), Expression.Parameter(typeof(WorkflowSearchModel))));
                 }
